@@ -1,0 +1,22 @@
+{
+  "name": "ccloud-core",
+  "private": true,
+  "description": "CCloud Core services and libraries",
+  "workspaces": [
+    "backend",
+    "cgress"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=ccloud-backend",
+    "build": "npm run build --workspaces",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "start:backend": "npm run start --workspace=ccloud-backend"
+  },
+  "keywords": [
+    "ccloud",
+    "monorepo",
+    "backend"
+  ],
+  "author": "dellano samuel fernandez",
+  "license": "ISC"
+}
