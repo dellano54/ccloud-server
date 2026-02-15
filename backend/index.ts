@@ -4,6 +4,7 @@ import 'dotenv/config';
 import authRoutes from './routes/auth.js';
 
 const app = express();
+app.use(express.static("../templates"));
 
 app.use(cors());
 app.use(express.json());

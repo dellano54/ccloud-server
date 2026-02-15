@@ -17,7 +17,11 @@ router.post("/register", async (req, res) => {
 
         const { AccessToken, RefreshToken } = createTokens(id, email, name)
 
-        verifyEmailMail(email, name, `${process.env.FRONTEND_URL}/verify-email?token=${verifyToken}`);
+        try {
+            await verifyEmailMail(email, name, `${process.env.FRONTEND_URL}/auth/verify-email?token=${verifyToken}`);
+        } catch (err) {
+            console.error("Failed to send verification email:", err);
+        }
 
         return res.json({
             "id": id,
@@ -122,22 +126,22 @@ router.get("/verify-email", async (req, res) => {
         const { token } = req.query;
         
         if (typeof token !== "string") {
-            return res.status(400).json({ error: "invalid token" })
+            return res.redirect("/verify-email-page.html?success=false&error=invalid+token");
         }
 
 
         const data = await verifyEmail(token);
 
         if (data){
-            return res.status(200).json({message: "mail sucessfully verified"});
+            return res.redirect("/verify-email-page.html?success=true");
         }
 
-        return res.status(400).json({error: "invalid token"});
+        return res.redirect("/verify-email-page.html?success=false&error=invalid+token");
 
 
 
     } catch (err: any) {
-        return res.status(400).json({error: "invalid token"});
+        return res.redirect("/verify-email-page.html?success=false&error=server+error");
     }
 
 })

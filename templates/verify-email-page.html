@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifying Your Email | CCloud</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0066FF;
+            --primary-soft: rgba(0, 102, 255, 0.1);
+            --primary-dark: #0052CC;
+            --success: #10B981;
+            --success-soft: #ECFDF5;
+            --error: #EF4444;
+            --error-soft: #FEF2F2;
+            --bg: #FAFAFB;
+            --card-bg: #FFFFFF;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --border: #E2E8F0;
+            --radius-lg: 24px;
+            --radius-md: 12px;
+            --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(0, 102, 255, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(0, 102, 255, 0.03) 0%, transparent 50%);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 440px;
+            padding: 24px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            padding: 48px 40px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Subtle top accent bar */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), #60A5FA);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 40px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .logo-text {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+        }
+
+        .status-container {
+            margin-bottom: 32px;
+        }
+
+        .icon-wrapper {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px auto;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .icon-wrapper.success { background: var(--success-soft); color: var(--success); }
+        .icon-wrapper.error { background: var(--error-soft); color: var(--error); }
+        .icon-wrapper.loading { background: var(--primary-soft); color: var(--primary); }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 0 0 12px 0;
+            letter-spacing: -0.01em;
+        }
+
+        p {
+            font-size: 15px;
+            line-height: 1.6;
+            color: var(--text-muted);
+            margin: 0 0 32px 0;
+        }
+
+        /* Premium Loader */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--primary-soft);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 14px 24px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 102, 255, 0.2);
+        }
+
+        .btn:active { transform: translateY(0); }
+
+        .hidden { display: none; }
+
+        /* Animation for state changes */
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .footer-note {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17.5 19a3.5 3.5 0 0 0 0-7c-.3 0-.6 0-.9.1a7 7 0 1 0-11.7 6.9"/>
+                    </svg>
+                </div>
+                <span class="logo-text">CCloud</span>
+            </div>
+
+            <!-- Loading State -->
+            <div id="state-loading" class="fade-in">
+                <div class="status-container">
+                    <div class="icon-wrapper loading">
+                        <div class="spinner"></div>
+                    </div>
+                    <h1>Verifying your email</h1>
+                    <p>Setting up your intelligent storage vault. This will only take a moment.</p>
+                </div>
+            </div>
+
+            <!-- Success State -->
+            <div id="state-success" class="hidden">
+                <div class="status-container">
+                    <div class="icon-wrapper success">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </div>
+                    <h1>Email Verified!</h1>
+                    <p>Welcome to CCloud. You're now ready to start archiving your memories and freeing up space.</p>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div id="state-error" class="hidden">
+                <div class="status-container">
+                    <div class="icon-wrapper error">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </div>
+                    <h1>Verification Failed</h1>
+                    <p id="error-message">This link is invalid or has expired. Please try requesting a new verification email.</p>
+                </div>
+            </div>
+
+            <div class="footer-note">
+                Intelligent Archival Storage &bull; 2026
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function init() {
+            const params = new URLSearchParams(window.location.search);
+            const success = params.get('success');
+            const error = params.get('error');
+
+            // Small delay to ensure smooth transition from loading to result
+            setTimeout(() => {
+                if (success === 'true') {
+                    showState('success');
+                } else if (success === 'false' || error) {
+                    showState('error', error);
+                }
+            }, 1200);
+        }
+
+        function showState(state, message) {
+            const states = ['loading', 'success', 'error'];
+            states.forEach(s => {
+                document.getElementById(`state-${s}`).classList.add('hidden');
+            });
+
+            const target = document.getElementById(`state-${state}`);
+            target.classList.remove('hidden');
+            target.classList.add('fade-in');
+
+            if (state === 'error' && message) {
+                document.getElementById('error-message').textContent = decodeURIComponent(message);
+            }
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

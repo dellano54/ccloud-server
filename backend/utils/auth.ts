@@ -76,8 +76,10 @@ const createUser = async ( name: string, email: string, password: string ) => {
 
 
     await one<{ id: string; email: string, name: string}>(db, {
-        text: 'INSERT INTO users (id, email, name, password) VALUES ($1, $2, $3, $4) RETURNING id, email, name',
+        text: 'INSERT INTO users (id, email, name, password_hash) VALUES ($1, $2, $3, $4) RETURNING id, email, name',
         values: [id, email, name, HashedPassword]
+    }).catch(error => {
+        throw error;
     });
 
     return id;
@@ -88,7 +90,7 @@ const createUser = async ( name: string, email: string, password: string ) => {
 const checkUser = async (email: string, password: string) => {
     if (await isExists(email)){
         const data = await one<UserDataLogin>(db, {
-            text: 'SELECT id, email, name, password FROM users WHERE email = $1',
+            text: 'SELECT id, email, name, password_hash as password FROM users WHERE email = $1',
             values: [email]
         })
 
@@ -158,7 +160,7 @@ const resetPassword = async (token: string, password: string) => {
 
 
         await exec(db, {
-            text: 'UPDATE users SET password = $1 WHERE email = $1',
+            text: 'UPDATE users SET password_hash = $1 WHERE email = $2',
             values: [password, email]
         })
 
@@ -192,7 +194,8 @@ const verifyEmail = async (token: string) => {
 
 
         if (Date.now() - timestamp > 3600000){
-            delete resetDatabase[token];
+            console.log("token expired timer");
+            delete verifyMail[token];
             throw new Error("token expired");
         }
 
@@ -208,10 +211,35 @@ const verifyEmail = async (token: string) => {
         return true;
 
     } catch (err: any) {
+        console.error("Error verifying email:", err);
         throw err;
     }
 }
 
+
+// clean expired tokens for every hour
+
+function cleanExpiredTokens(): void {
+  const now = Date.now()
+
+  const cleanStore = (
+    store: Record<string, ResetEntry>,
+    expiry: number
+  ) => {
+    for (const token in store) {
+      if (now - store[token].timestamp > expiry) {
+        delete store[token]
+      }
+    }
+  }
+
+  cleanStore(resetDatabase, 3600000)
+  cleanStore(verifyMail, 3600000)
+}
+
+
+cleanExpiredTokens()
+setInterval(cleanExpiredTokens, 60 * 60 * 1000)
 
 
 export {createUser, checkUser, sendResetLink, resetPassword, 
