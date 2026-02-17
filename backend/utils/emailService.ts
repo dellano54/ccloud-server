@@ -24,7 +24,7 @@ const forgetPasswordMail = async (email: string, name: string, link: string) => 
         from: "CCLOUD <onboarding@resend.dev>",
         to: email,
         subject: "password recover from CCLOUD",
-        html: fs.readFileSync("../templates/forgot-password.html", 'utf-8').replace("{{name}}", name).replaceAll("{{magic_link}}", link)
+        html: fs.readFileSync("../templates/forgot-password.html", 'utf-8').replace("{{name}}", name).replaceAll("{{reset_link}}", link)
     })
 
     if (error){

@@ -128,7 +128,7 @@ const sendResetLink = async (email: string) => {
 
         const unqiueToken: string = await bcrypt.hash(data.id, 10);
 
-        forgetPasswordMail(email, data.name, `${process.env.FRONTEND_URL}/reset-password?token=${unqiueToken}`);
+        forgetPasswordMail(email, data.name, `${process.env.FRONTEND_URL}/reset-password-page.html?token=${unqiueToken}`);
 
         resetDatabase[unqiueToken] = {
             "email": email,

@@ -2,16 +2,16 @@ import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
 import authRoutes from './routes/auth.js';
+import fileOps from './routes/fileOps.js';
 
 const app = express();
 app.use(express.static("../templates"));
 
 app.use(cors());
-app.use(express.json());
-
 const PORT = process.env.PORT || 8000;
 
-app.use("/auth", authRoutes);
+app.use("/auth", express.json(), authRoutes);
+app.use("/files", fileOps);
 
 app.listen(PORT, () => {
   console.log(`Backend server started on port: ${PORT}`);
