@@ -1,7 +1,8 @@
 import express from "express";
 import middleware from "../middlewares/auth.js";
-import { calculateHash, addFile } from "../utils/fileoperations.js";
+import { calculateHash, addFile, calculateCombinedHash, SyncCloudDB } from "../utils/fileoperations.js";
 import multer from 'multer';
+
 
 const router = express.Router();
 
@@ -39,6 +40,55 @@ router.post("/upload", middleware, upload.single("file"), async (req, res) => {
     }
 
     
+})
+
+
+router.post("/state", middleware, async (req, res) => {
+    try{
+        const {hash, count} = await calculateCombinedHash(req.user.id);
+        return res.status(200).json(
+            {
+                stateHash: hash,
+                fileCount: count
+            }
+        );
+        
+
+    } catch (err: any){
+        return res.status(500).json({error: err.message});
+    }
+})
+
+
+router.get("/sync", middleware, async (req, res) => {
+    try{
+
+        var {version, limit } = req.query;
+
+        if (!version){
+            version = "0";
+        }
+
+        if (!limit){
+            limit = "100";
+        }
+
+
+        const {items, deletedIds, nextVersion} = await SyncCloudDB(req.user.id, Number(version),
+                                    Number(limit));
+
+
+
+        if (!items || !deletedIds || !nextVersion){
+            return res.status(500).json({err: "No data returned"});
+        }
+
+        return res.status(200).json({items, deletedIds, nextVersion});
+
+
+    } catch (err: any){
+        return res.status(500).json({error: err.message});
+    }
 })
 
 export default router;

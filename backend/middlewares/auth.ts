@@ -18,7 +18,7 @@ app.use((req, res, next) => {
         const data = jwt.verify(req.headers.authorization.split(" ")[1], secret);
         req.user = data;
 
-        next();
+        return next();
     } catch (err) {
         return res.status(401).json({error: "invalid authorization key"});
     }

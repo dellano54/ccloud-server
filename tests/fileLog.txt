@@ -1,0 +1,153 @@
+
+██████████████████████████████████████████████████████████████████████
+█                                                                    █
+█                  CCloud FileOps Endpoint Test Suite                █
+█                                                                    █
+██████████████████████████████████████████████████████████████████████
+
+======================================================================
+TEST 1: POST /files/upload
+======================================================================
+E:\CCloud\core\tests\fileUpload.py:44: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  creation_date = datetime.utcnow().isoformat() + "Z"
+📁 File size: 51200 bytes
+🔐 SHA-256: 747ffb66d9569fce...
+📅 Creation date: 2026-02-18T18:59:21.589366Z
+
+✓ Status: 200
+✓ Response: {
+  "id": "747ffb66d9569fce70d8e9910230ed6cca8d52100286d9e86aa03ebdbb4f69d1",  
+  "checksum": "747ffb66d9569fce70d8e9910230ed6cca8d52100286d9e86aa03ebdbb4f69d1",
+  "status": "processed"
+}
+
+✅ UPLOAD TEST PASSED
+
+======================================================================       
+TEST 2: POST /files/state
+======================================================================       
+📊 Fetching combined state hash and file count...
+
+✓ Status: 200
+✓ Response: {
+  "stateHash": "f2e7cf1135838372d4a6905c0525958d65282f8e8b8b8bfc762aa7c1cd9d4a5e",
+  "fileCount": "1"
+}
+
+📈 State Hash: f2e7cf1135838372...
+📂 Total files: 1
+
+✅ STATE TEST PASSED
+
+======================================================================       
+TEST 3: GET /files/sync
+======================================================================       
+🔄 Syncing changes from version 0 with limit 50...
+
+✓ Status: 200
+✓ Response structure:
+{
+  "items": [
+    {
+      "id": "747ffb66d9569fce70d8e9910230ed6cca8d52100286d9e86aa03ebdbb4f69d1",
+      "version": "1",
+      "name": "test_document.pdf",
+      "mimeType": "application/pdf",
+      "size": 51200,
+      "creationDate": "2026-02-18T18:59:21.589366+00:00",
+      "checksum": "747ffb66d9569fce70d8e9910230ed6cca8d52100286d9e86aa03ebdbb4f69d1"
+    }
+  ],
+  "deletedIds": [],
+  "nextVersion": 1
+}
+
+📄 Items: 1 changes
+🗑️  Deleted: 0 files
+⏭️  Next version: 1
+
+   Sample change:
+   - ID: 747ffb66d9569fce...
+   - Name: test_document.pdf
+   - Size: 51200 bytes
+   - MIME: application/pdf
+
+✅ SYNC TEST PASSED
+
+======================================================================       
+TEST 4: Corruption Detection (negative test)
+======================================================================       
+🔴 Testing upload with mismatched checksum...
+E:\CCloud\core\tests\fileUpload.py:207: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  creation_date = datetime.utcnow().isoformat() + "Z"
+
+✓ Status: 400
+✓ Response: {
+  "error": "try again. the file recieved by the server is corrupted"
+}
+
+✅ CORRUPTION DETECTION TEST PASSED (correctly rejected malformed request)   
+
+======================================================================       
+TEST 5: Incremental Sync (version tracking)
+======================================================================       
+🔄 Testing sync from various version points...
+
+1️⃣  Full sync (version=0):
+======================================================================       
+TEST 3: GET /files/sync
+======================================================================       
+🔄 Syncing changes from version 0 with limit 10...
+
+✓ Status: 200
+✓ Response structure:
+{
+  "items": [
+    {
+      "id": "747ffb66d9569fce70d8e9910230ed6cca8d52100286d9e86aa03ebdbb4f69d1",
+      "version": "1",
+      "name": "test_document.pdf",
+      "mimeType": "application/pdf",
+      "size": 51200,
+      "creationDate": "2026-02-18T18:59:21.589366+00:00",
+      "checksum": "747ffb66d9569fce70d8e9910230ed6cca8d52100286d9e86aa03ebdbb4f69d1"
+    }
+  ],
+  "deletedIds": [],
+  "nextVersion": 1
+}
+
+📄 Items: 1 changes
+🗑️  Deleted: 0 files
+⏭️  Next version: 1
+
+   Sample change:
+   - ID: 747ffb66d9569fce...
+   - Name: test_document.pdf
+   - Size: 51200 bytes
+   - MIME: application/pdf
+
+✅ SYNC TEST PASSED
+
+
+2️⃣  Incremental sync (version=1):
+======================================================================       
+TEST 3: GET /files/sync
+======================================================================       
+🔄 Syncing changes from version 1 with limit 10...
+
+✓ Status: 500
+✓ Response structure:
+{
+  "err": "No data returned"
+}
+
+❌ SYNC TEST FAILED: Expected 200, got 500
+
+⚠️  Could not complete incremental sync test
+
+
+██████████████████████████████████████████████████████████████████████       
+█                         Test Suite Complete                        █       
+██████████████████████████████████████████████████████████████████████       
+
