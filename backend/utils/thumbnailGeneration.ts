@@ -130,6 +130,7 @@ export async function streamThumbnailZip(
         if (!res.headersSent) {
           res.status(500).end();
         }
+        console.log(err);
       })
       .pipe(res)
       .on("error", () => {});
