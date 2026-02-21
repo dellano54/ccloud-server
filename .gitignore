@@ -2,6 +2,10 @@
 node_modules/
 backend/node_modules/
 backend/storage/
+backend/thumbnails/
+tests/*.zip
+tests/*.png
+tests/*.txt
 
 # Build
 dist/

@@ -50,10 +50,10 @@ const addFile = async (
 // generate combined hash for multiple files
 const calculateCombinedHash = async (userId: string) => {
     try {
-        const filesHash = await one<{ combined_hash: string, file_count: Number }>(db, {
+        const filesHash = await one<{ combined_hash: string | null; file_count: number }>(db, {
         text: `
             SELECT
-                COUNT(*) AS file_count,
+                COUNT(*)::bigint AS file_count,
                 string_agg(id, '' ORDER BY id) AS combined_hash
             FROM files
             WHERE user_id = $1;
@@ -66,7 +66,11 @@ const calculateCombinedHash = async (userId: string) => {
             throw new Error("No files found");
         }
 
-        filesHash.combined_hash = createHash('sha256').update(filesHash.combined_hash, 'utf8').digest('hex');
+        if (filesHash.combined_hash){
+          filesHash.combined_hash = createHash('sha256').update(filesHash.combined_hash, 'utf8').digest('hex');
+        } else {
+          throw Error("no file found");
+        }
 
     return { "hash": filesHash.combined_hash,
             "count": filesHash.file_count };
@@ -139,5 +143,53 @@ const SyncCloudDB = async (userID: string, version: number, limit: number) => {
   }
 }
 
+
+const verifyIfUserOwns = async (userId: string, fileIds: string[]): Promise<boolean> => {
+  try {
+    if (!Array.isArray(fileIds) || fileIds.length === 0) {
+      return false;
+    }
+
+    const ver = await one<{ all_belong: boolean }>(db, {
+      text: `
+        SELECT COUNT(*)::bigint = $3::bigint AS all_belong
+        FROM files
+        WHERE user_id = $1
+          AND id = ANY($2::text[])
+      `,
+      values: [userId, fileIds, fileIds.length],
+    });
+
+    if (!ver){
+      throw new Error("DB query failed");
+    }
+
+    return ver.all_belong;
+
+
+  } catch (err: any){
+    throw err;
+  }
+}
+
+
+const GetFilesMetaData = async (userId: string, filesId: string[]): Promise<{mime_type: string}[]> => {
+  try{
+
+    const data = await many<{mime_type: string}>(db, 
+      {
+        text:   `SELECT mime_type FROM files WHERE user_id = $1 AND id = ANY($2::text[])`,
+        values: [userId, filesId]
+      }
+    );
+
+    return data;
+
+  } catch (err){
+    throw err;
+  }
+}
+
+
 export { calculateHash, addFile, calculateCombinedHash,
-  SyncCloudDB};
+  SyncCloudDB, verifyIfUserOwns, GetFilesMetaData};

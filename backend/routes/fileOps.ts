@@ -1,6 +1,6 @@
 import express from "express";
 import middleware from "../middlewares/auth.js";
-import { calculateHash, addFile, calculateCombinedHash, SyncCloudDB } from "../utils/fileoperations.js";
+import { calculateHash, addFile, calculateCombinedHash, SyncCloudDB} from "../utils/fileoperations.js";
 import multer from 'multer';
 
 
@@ -90,5 +90,8 @@ router.get("/sync", middleware, async (req, res) => {
         return res.status(500).json({error: err.message});
     }
 })
+
+
+
 
 export default router;
