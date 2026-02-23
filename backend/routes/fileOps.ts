@@ -1,7 +1,7 @@
 import express from "express";
 import middleware from "../middlewares/auth.js";
 import { calculateHash, addFile, calculateCombinedHash, SyncCloudDB, verifyIfUserOwns,
-    readFilesRange
+    readFilesRange, deleteFile
 } from "../utils/fileoperations.js";
 import multer from 'multer';
 import path from 'path';
@@ -90,6 +90,25 @@ router.get("/sync", middleware, async (req, res) => {
 
         return res.status(200).json({items, deletedIds, nextVersion});
 
+
+    } catch (err: any){
+        return res.status(500).json({error: err.message});
+    }
+})
+
+
+router.delete("/:id", middleware, express.json(), async(req, res) => {
+    try{
+        
+        if (await verifyIfUserOwns(req.user.id, [req.query.id as string])){
+            const id = await deleteFile(req.user.id, req.query.id as string);
+            return res.status(200).json({
+                message: "File deleted sucessfully",
+                id: id
+            })
+        } else {
+            return res.status(400).json({error: "you do not own the file"})
+        }
 
     } catch (err: any){
         return res.status(500).json({error: err.message});

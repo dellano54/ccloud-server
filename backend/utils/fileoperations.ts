@@ -201,5 +201,21 @@ const readFilesRange = (userId: string, fileId: string, res: any) => {
 
 
 
+const deleteFile = async (userid: string, fileId: string) => {
+  const result =  await one<{id: string}>(db, {
+    text: 'DELETE FROM files where id = $1 AND user_id = $2 RETURNING id;',
+    values: [fileId, userid]
+  })
+
+  if (!result){
+    throw new Error("an error occured");
+  }
+
+  return result.id;
+}
+
+
+
 export { calculateHash, addFile, calculateCombinedHash,
-  SyncCloudDB, verifyIfUserOwns, GetFilesMetaData, readFilesRange};
+  SyncCloudDB, verifyIfUserOwns, GetFilesMetaData, readFilesRange,
+  deleteFile};
