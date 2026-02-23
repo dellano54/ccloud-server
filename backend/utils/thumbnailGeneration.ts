@@ -11,6 +11,15 @@ const THUMBNAIL_SIZE = 300;
 const STORAGE_PATH = process.env.CONTENTSTORAGE || "./storage";
 const CONCURRENCY_LIMIT = 4;
 
+const ALLOWED_MIMES = [
+  "image/jpeg", "image/png", "image/webp", "image/gif",
+  "video/mp4", "video/mpeg", "video/quicktime"
+];
+
+function isValidFileId(fileId: string): boolean {
+  return /^[a-zA-Z0-9._-]+$/.test(fileId);
+}
+
 async function checkDir(userID: string) {
   await fs.mkdir(path.join(THUMBNAIL_FOLDER, userID), { recursive: true });
 }
@@ -70,6 +79,11 @@ export async function generateThumbnails(
   mimeTypes: { mime_type: string }[],
   userID: string
 ): Promise<string[]> {
+  // Validate all fileIds
+  if (!fileIds.every(isValidFileId)) {
+    throw new Error("Invalid file ID format");
+  }
+
   await checkDir(userID);
 
   const limit = pLimit(CONCURRENCY_LIMIT);
@@ -78,6 +92,10 @@ export async function generateThumbnails(
     limit(async () => {
       const mime = mimeTypes[index]?.mime_type;
       if (!mime) return null;
+
+      if (!ALLOWED_MIMES.includes(mime)) {
+        return null;
+      }
 
       const thumbnailPath = getThumbnailPath(userID, fileId);
 

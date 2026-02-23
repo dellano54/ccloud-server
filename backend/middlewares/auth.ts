@@ -1,5 +1,6 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import {validate as validateUUID } from 'uuid';
 
 const secret = process.env.JWT_ACCESS_SECRET;
 if (!secret) {
@@ -16,6 +17,9 @@ app.use((req, res, next) => {
 
     try{
         const data = jwt.verify(req.headers.authorization.split(" ")[1], secret);
+        if (typeof data === 'string' || !validateUUID(data.id)) {
+            throw new Error("Invalid user ID format");
+        }
         req.user = data;
 
         return next();

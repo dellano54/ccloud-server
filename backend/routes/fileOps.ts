@@ -1,10 +1,15 @@
 import express from "express";
 import middleware from "../middlewares/auth.js";
-import { calculateHash, addFile, calculateCombinedHash, SyncCloudDB} from "../utils/fileoperations.js";
+import { calculateHash, addFile, calculateCombinedHash, SyncCloudDB, verifyIfUserOwns,
+    readFilesRange
+} from "../utils/fileoperations.js";
 import multer from 'multer';
+import path from 'path';
 
 
 const router = express.Router();
+
+const storageFolder = process.env.CONTENTSTORAGE || "./storage";
 
 const upload = multer({
   storage: multer.memoryStorage()
@@ -92,6 +97,31 @@ router.get("/sync", middleware, async (req, res) => {
 })
 
 
+
+// stream content
+router.get("/:id/stream", middleware, async (req, res) => {
+    try{
+
+        const Fileid: string[] = [req.query.id as string];
+        const userOwns = await verifyIfUserOwns(req.user.id, Fileid);
+
+        if (userOwns){
+            if (req.headers.range){
+                return readFilesRange(req.user.id, Fileid[0], res);
+                
+                
+            } else {
+                res.sendFile(path.resolve(storageFolder, req.user.id, Fileid[0]), {root: process.cwd()});
+
+            }
+        } else {
+            return res.status(403).json({error: "you don't have access to this file"});
+        }
+
+    } catch (err: any){
+        return res.status(500).json({error: err.message})
+    }
+})
 
 
 export default router;

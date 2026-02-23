@@ -2,7 +2,8 @@ import { createHash } from "crypto";
 import { one, many } from "cgress";
 import db from "../database/db.js";
 import path from "path";
-import fs from "fs";
+import fs, {createReadStream} from "fs";
+
 import {FileSyncResponse} from "../types/filesOp.js";
 
 const STORAGEFOLDER = process.env.CONTENTSTORAGE || "./storage";
@@ -191,5 +192,14 @@ const GetFilesMetaData = async (userId: string, filesId: string[]): Promise<{mim
 }
 
 
+
+
+const readFilesRange = (userId: string, fileId: string, res: any) => {
+  const filePath = path.resolve(STORAGEFOLDER, userId, fileId);
+  return createReadStream(filePath).pipe(res);
+}
+
+
+
 export { calculateHash, addFile, calculateCombinedHash,
-  SyncCloudDB, verifyIfUserOwns, GetFilesMetaData};
+  SyncCloudDB, verifyIfUserOwns, GetFilesMetaData, readFilesRange};
