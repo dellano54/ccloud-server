@@ -17,10 +17,15 @@ const createAlbum = async (user_id: string, title: string) => {
 
 
 
-const addFilesToAlbum = async (albumId: string, fileList: string[]) => {
+const addFilesToAlbum = async (albumId: string, fileList: string[], userId: string) => {
     const ids = await many(db, {
-        text: `INSERT INTO album_files (album_id, file_id) SELECT $1, unnest($2::text[]) RETURNING album_id ON CONFLICT DO NOTHING;`,
-        values: [albumId, fileList]
+        text: `INSERT INTO album_files (album_id, file_id)
+            SELECT a.id, unnest($2::text[])
+            FROM albums a
+            WHERE a.id = $1 AND a.user_id = $3
+            ON CONFLICT DO NOTHING
+            RETURNING album_id;`,
+        values: [albumId, fileList, userId]
     })
 
     if (!ids){
@@ -57,7 +62,7 @@ const syncAlbum = async (userid: string) => {
     }
 
 
-    return userid;
+    return albumData;
 }
 
 

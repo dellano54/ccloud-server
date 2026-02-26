@@ -5,11 +5,11 @@ CREATE TABLE albums (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT now()
+    created_at TIMESTAMPTZ DEFAULT now(),
+    CONSTRAINT unique_user_album_title UNIQUE (user_id, title)
 );
 
 CREATE INDEX idx_albums_user ON albums(user_id);
-
 
 -- Album ↔ Files (Many-to-Many)
 CREATE TABLE album_files (

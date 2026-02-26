@@ -42,7 +42,14 @@ const addFile = async (
 
   await fs.promises.mkdir(dir, { recursive: true });
 
-  await fs.promises.writeFile(outPath, file, { flag: "wx" });
+  try {
+    await fs.promises.writeFile(outPath, file, { flag: "wx" });
+  } catch (err: any) {
+    if (err.code !== "EEXIST") {
+      throw err;
+    }
+    // If exists → safe (content-addressed)
+  }
 
   return inserted.id;
 };

@@ -30,7 +30,7 @@ router.post("/thumbnails/batch", middleware, async (req, res) => {
 
 router.post("/:id/thumbnail", middleware, async (req, res) => {
     try{
-        const fileId: string[] = [req.query.id as string];
+        const fileId: string[] = [req.params.id as string];
 
         if (await verifyIfUserOwns(req.user.id, fileId)){
             const meta = await GetFilesMetaData(req.user.id, fileId);

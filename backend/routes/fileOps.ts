@@ -97,31 +97,12 @@ router.get("/sync", middleware, async (req, res) => {
 })
 
 
-router.delete("/:id", middleware, express.json(), async(req, res) => {
-    try{
-        
-        if (await verifyIfUserOwns(req.user.id, [req.query.id as string])){
-            const id = await deleteFile(req.user.id, req.query.id as string);
-            return res.status(200).json({
-                message: "File deleted sucessfully",
-                id: id
-            })
-        } else {
-            return res.status(400).json({error: "you do not own the file"})
-        }
-
-    } catch (err: any){
-        return res.status(500).json({error: err.message});
-    }
-})
-
-
 
 // stream content
 router.get("/:id/stream", middleware, async (req, res) => {
     try{
 
-        const Fileid: string[] = [req.query.id as string];
+        const Fileid: string[] = [req.params.id as string];
         const userOwns = await verifyIfUserOwns(req.user.id, Fileid);
 
         if (userOwns){
@@ -145,9 +126,10 @@ router.get("/:id/stream", middleware, async (req, res) => {
 
 router.delete("/:id", middleware, async (req, res) => {
     try {
-        const fileId: string[] = [req.query.id as string];
+        const fileId: string[] = [req.params.id as string];
+        const userOwns: boolean = await verifyIfUserOwns(req.user.id, fileId);
 
-        if (await verifyIfUserOwns(req.user.id, fileId)){
+        if (userOwns){
             const id = await deleteFile(req.user.id, fileId[0]);
             return res.status(200).json({
                 message: "File deleted successfully",
