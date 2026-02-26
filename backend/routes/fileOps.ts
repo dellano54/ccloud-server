@@ -143,4 +143,25 @@ router.get("/:id/stream", middleware, async (req, res) => {
 })
 
 
+router.delete("/:id", middleware, async (req, res) => {
+    try {
+        const fileId: string[] = [req.query.id as string];
+
+        if (await verifyIfUserOwns(req.user.id, fileId)){
+            const id = await deleteFile(req.user.id, fileId[0]);
+            return res.status(200).json({
+                message: "File deleted successfully",
+                id: id
+            });
+
+        } else {
+            return res.status(404).json({error: "File not Found"});
+        }
+
+
+    } catch (err: any){
+        return res.status(500).json({err: err})
+    }
+})
+
 export default router;

@@ -216,6 +216,7 @@ const deleteFile = async (userid: string, fileId: string) => {
 
 
 
+
 export { calculateHash, addFile, calculateCombinedHash,
   SyncCloudDB, verifyIfUserOwns, GetFilesMetaData, readFilesRange,
   deleteFile};
