@@ -6,9 +6,11 @@ import fileOps from './routes/fileOps.js';
 import thumbnailOps from "./routes/thumbnails.js"
 import albumRoutes from "./routes/albums.js";
 import userRoutes from "./routes/user.js"
+import {logger} from "./middlewares/auth.js";
 
 const app = express();
 app.use(express.static("../templates"));
+app.use(logger);
 
 app.use(cors());
 const PORT = process.env.PORT || 8000;

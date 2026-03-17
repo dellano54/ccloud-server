@@ -1,6 +1,6 @@
 import express from 'express';
 import middleware from '../middlewares/auth.js'
-import {createAlbum, addFilesToAlbum, syncAlbum} from '../utils/albums.js'
+import {createAlbum, addFilesToAlbum, syncAlbum, renameAlbum} from '../utils/albums.js'
 import {verifyIfUserOwns} from '../utils/fileoperations.js';
 
 const router = express.Router();
@@ -43,6 +43,22 @@ router.post("/:id/files", express.json(), middleware, async (req, res) => {
     } catch (err: any){
         return res.status(500).json({error: err});
     }
+})
+
+
+router.post("/rename/:id", express.json(), middleware, async (req, res) => {
+    try{
+        if (!req.body.title){
+            return res.status(400).json({error: "malformed body"})
+        }
+
+        const data = await renameAlbum(req.params.id as string, req.body.title, req.user.id);
+        return res.status(200).json(data);
+
+    } catch (err: any){
+        return res.status(500).json({error: err});
+    }
+
 })
 
 

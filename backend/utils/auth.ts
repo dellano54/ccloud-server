@@ -12,6 +12,7 @@ type UserDataLogin = {
     email: string;
     name: string;
     password: string;
+    is_verified: boolean;
 };
 
 
@@ -90,7 +91,7 @@ const createUser = async ( name: string, email: string, password: string ) => {
 const checkUser = async (email: string, password: string) => {
     if (await isExists(email)){
         const data = await one<UserDataLogin>(db, {
-            text: 'SELECT id, email, name, password_hash as password FROM users WHERE email = $1',
+            text: 'SELECT id, email, name, password_hash as password, is_verified FROM users WHERE email = $1',
             values: [email]
         })
 
@@ -101,6 +102,10 @@ const checkUser = async (email: string, password: string) => {
 
         if (!await bcrypt.compare(password, data.password)){
             throw new Error("invalid username or password");
+        }
+
+        if (!data.is_verified) {
+            throw new Error("Please verify your email to login.");
         }
 
         return {id: data.id, name: data.name};
@@ -238,9 +243,23 @@ function cleanExpiredTokens(): void {
 }
 
 
+const isVerified = async (email: string) => {
+    const user = await one<{is_verified: boolean}>(db, {
+        text: "SELECT is_verified FROM users WHERE email = $1",
+        values: [email]
+    });
+
+    if (!user){
+        throw new Error("User not found");
+    }
+
+    return user.is_verified;
+}
+
+
 cleanExpiredTokens()
 setInterval(cleanExpiredTokens, 60 * 60 * 1000)
 
 
 export {createUser, checkUser, sendResetLink, resetPassword, 
-    generateVerifyToken, verifyEmail}
+    generateVerifyToken, verifyEmail, isVerified}

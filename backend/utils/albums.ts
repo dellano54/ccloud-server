@@ -28,12 +28,8 @@ const addFilesToAlbum = async (albumId: string, fileList: string[], userId: stri
         values: [albumId, fileList, userId]
     })
 
-    if (!ids){
-        throw new Error("failed creating id");
-    }
-
-
-    return ids;
+    // Return the result (even if empty) instead of throwing
+    return ids || [];
 }
 
 
@@ -58,7 +54,7 @@ const syncAlbum = async (userid: string) => {
     });
 
     if (!albumData){
-        throw new Error("failed fetching data");
+        return [];
     }
 
 
@@ -66,4 +62,18 @@ const syncAlbum = async (userid: string) => {
 }
 
 
-export {createAlbum, addFilesToAlbum, syncAlbum}
+const renameAlbum = async (albumId: string, title: string, userId: string) => {
+    const data = await one(db, {
+        text: `UPDATE albums SET title = $1 WHERE id = $2 AND user_id = $3 RETURNING id, title`,
+        values: [title, albumId, userId]
+    });
+
+    if (!data){
+        throw new Error("failed to rename album");
+    }
+
+    return data;
+}
+
+
+export {createAlbum, addFilesToAlbum, syncAlbum, renameAlbum}

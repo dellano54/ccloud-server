@@ -1,6 +1,7 @@
 import express from 'express';
 import {createUser, checkUser, sendResetLink, resetPassword,
-    generateVerifyToken, verifyEmail } from '../utils/auth.js';
+    generateVerifyToken, verifyEmail, 
+    isVerified} from '../utils/auth.js';
 import { createTokens, recreateRefreshToken } from '../utils/tokens.js';
 import {verifyEmailMail} from '../utils/emailService.js';
 
@@ -14,23 +15,17 @@ router.post("/register", async (req, res) => {
     try {
         const id = await createUser(name, email, password);
         const verifyToken = await generateVerifyToken(id, email);
-
-        const { AccessToken, RefreshToken } = createTokens(id, email, name)
-
         try {
             await verifyEmailMail(email, name, `${process.env.FRONTEND_URL}/auth/verify-email?token=${verifyToken}`);
         } catch (err) {
             console.error("Failed to send verification email:", err);
         }
 
-        return res.json({
-            "id": id,
-            "name": name,
-            "email": email,
-            "accessToken": AccessToken,
-            "refreshToken": RefreshToken,
-            "expiresIn": 10800
-        });
+        return res.status(200).json({
+            message: "User created successfully, please check your email to verify your account"
+        })
+
+        
 
     }catch(error: any){
         return res.status(400).json({ error: error.message });
@@ -38,6 +33,7 @@ router.post("/register", async (req, res) => {
     }
     
 });
+
 
 
 // login
@@ -48,12 +44,15 @@ router.post("/login", async (req, res) => {
         const { id, name } = await checkUser( email, password );
         
         const { AccessToken, RefreshToken } = createTokens(id, email, name);
-
-        return res.json({ 
-            "accessToken": AccessToken,
-            "refreshToken": RefreshToken,
-            "expiresIn": 10800
-        })
+        if (await isVerified(email)){
+            return res.json({ 
+                "accessToken": AccessToken,
+                "refreshToken": RefreshToken,
+                "expiresIn": 10800
+            })
+        } else {
+            return res.status(403).json({error: "email not verified"});
+        }
 
     } catch (err: any){
         return res.status(400).json({error: err.message});

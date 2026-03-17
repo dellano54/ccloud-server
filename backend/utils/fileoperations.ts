@@ -4,19 +4,28 @@ import db from "../database/db.js";
 import path from "path";
 import fs, {createReadStream} from "fs";
 
-import {FileSyncResponse} from "../types/filesOp.js";
+import {FileChangeRow} from "../types/filesOp.js";
 
 const STORAGEFOLDER = process.env.CONTENTSTORAGE || "./storage";
 
-const calculateHash = (bin: Buffer): string => {
-  return createHash("sha256")
-    .update(bin)
-    .digest("hex");
+/**
+ * Calculate SHA-256 Checksum from a file path using streams (Memory-efficient)
+ */
+const calculateHash = (filePath: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const hash = createHash("sha256");
+    const stream = createReadStream(filePath);
+    stream.on("data", (chunk) => hash.update(chunk));
+    stream.on("end", () => resolve(hash.digest("hex")));
+    stream.on("error", (err) => reject(err));
+  });
 };
 
 
+import { generateThumbnails } from "./thumbnailGeneration.js";
+
 const addFile = async (
-  file: Buffer,
+  tempPath: string,
   creationDate: string,
   mimeType: string,
   originalName: string,
@@ -24,13 +33,15 @@ const addFile = async (
   hash: string
 ): Promise<string> => {
 
+  const stats = await fs.promises.stat(tempPath);
+
   const inserted = await one<{ id: string }>(db, {
     text: `
       INSERT INTO files (id, filename, creation_date, size, mime_type, user_id)
       VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING id
     `,
-    values: [hash, originalName, creationDate, file.length, mimeType, userId]
+    values: [hash, originalName, creationDate, stats.size, mimeType, userId]
   });
 
   if (!inserted) {
@@ -43,12 +54,22 @@ const addFile = async (
   await fs.promises.mkdir(dir, { recursive: true });
 
   try {
-    await fs.promises.writeFile(outPath, file, { flag: "wx" });
+    // Atomic rename (O(1) operation)
+    await fs.promises.rename(tempPath, outPath);
+    
+    // Auto-generate thumbnail immediately after successful move
+    console.log(`[Backend] Generating thumbnail for ${hash}...`);
+    generateThumbnails([hash], [{ mime_type: mimeType }], userId).catch(err => {
+        console.error(`[Backend] Background thumbnail generation failed for ${hash}:`, err);
+    });
+
   } catch (err: any) {
-    if (err.code !== "EEXIST") {
+    if (err.code === "EXDEV") {
+      await fs.promises.copyFile(tempPath, outPath);
+      await fs.promises.unlink(tempPath);
+    } else if (err.code !== "EEXIST") {
       throw err;
     }
-    // If exists → safe (content-addressed)
   }
 
   return inserted.id;
@@ -58,32 +79,35 @@ const addFile = async (
 // generate combined hash for multiple files
 const calculateCombinedHash = async (userId: string) => {
     try {
-        const filesHash = await one<{ combined_hash: string | null; file_count: number }>(db, {
-        text: `
-            SELECT
-                COUNT(*)::bigint AS file_count,
-                string_agg(id, '' ORDER BY id) AS combined_hash
-            FROM files
-            WHERE user_id = $1;
-        `,
-        values: [userId]
+        // Get the max version from file_changes
+        const versionResult = await one<{ max_version: number | null }>(db, {
+            text: `SELECT COALESCE(MAX(version), 0) as max_version FROM file_changes WHERE user_id = $1`,
+            values: [userId]
         });
 
- 
-        if (!filesHash) {
-            throw new Error("No files found");
+        // Get the file count
+        const countResult = await one<{ file_count: number }>(db, {
+            text: `SELECT COUNT(*)::int as file_count FROM files WHERE user_id = $1`,
+            values: [userId]
+        });
+
+        if (!versionResult || !countResult) {
+            throw new Error("Failed to retrieve file stats from database");
         }
 
-        if (filesHash.combined_hash){
-          filesHash.combined_hash = createHash('sha256').update(filesHash.combined_hash, 'utf8').digest('hex');
-        } else {
-          throw Error("no file found");
-        }
+        const version = Number(versionResult.max_version || 0);
+        const count = Number(countResult.file_count || 0);
 
-    return { "hash": filesHash.combined_hash,
-            "count": filesHash.file_count };
+        const stateString = `v:${version}|c:${count}`;
+        const hash = createHash('sha256').update(stateString, 'utf8').digest('hex');
+
+        return { 
+            "hash": hash,
+            "count": count 
+        };
 
     } catch (err: any){
+        console.error('calculateCombinedHash error:', err);
         throw err;
     }
 }
@@ -91,7 +115,7 @@ const calculateCombinedHash = async (userId: string) => {
 
 
 
-function structureFileChanges(changes: any) {
+function structureFileChanges(changes: FileChangeRow[]) {
   const files = [];
   const deletedIds = [];
   let nextVersion = 0;
@@ -100,18 +124,18 @@ function structureFileChanges(changes: any) {
     const versionNum = Number(change.version);
     if (versionNum > nextVersion) nextVersion = versionNum;
 
-    if (change.op === "insert" && change.snapshot) {
-      const s = change.snapshot;
-
-      files.push({
-        id: s.id,
-        version: change.version,
-        name: s.name,
-        mimeType: s.mimeType,
-        size: s.size,
-        creationDate: s.creationDate,
-        checksum: s.checksum
-      });
+    if (change.op === "insert" || change.op === "update") {
+      if (change.snapshot) {
+        files.push({
+          id: change.snapshot.id,
+          version: change.version,
+          name: change.snapshot.name,
+          mimeType: change.snapshot.mimeType,
+          size: change.snapshot.size,
+          creationDate: change.snapshot.creationDate,
+          checksum: change.snapshot.checksum
+        });
+      }
     }
 
     if (change.op === "delete") {
@@ -132,7 +156,7 @@ function structureFileChanges(changes: any) {
 const SyncCloudDB = async (userID: string, version: number, limit: number) => {
   try {
 
-    const rows = await many<FileSyncResponse>(db, {
+    const rows = await many<FileChangeRow>(db, {
         text: `SELECT version, file_id, op, snapshot FROM file_changes 
       WHERE user_id = $1 AND version > $2 
       ORDER BY version ASC LIMIT $3`,

@@ -6,7 +6,7 @@ import {streamThumbnailZip} from "../utils/thumbnailGeneration.js";
 import path from 'path';
 
 
-const THUMBNAIL_FOLDER = process.env.THUMBNAIL_STORAGE || "./thumbnail";
+const THUMBNAIL_FOLDER = process.env.THUMBNAIL_STORAGE || "./thumbnails";
 
 const router = express.Router();
 
@@ -14,7 +14,6 @@ const router = express.Router();
 router.post("/thumbnails/batch", middleware, async (req, res) => {
     try{
         const user = req.user;
-        console.log(req.body);
         const fileIds: string[] = req.body.fileIds;
 
         if (await verifyIfUserOwns(user.id, fileIds)){
@@ -28,17 +27,13 @@ router.post("/thumbnails/batch", middleware, async (req, res) => {
 })
 
 
-router.post("/:id/thumbnail", middleware, async (req, res) => {
+router.get("/:id/thumbnail", middleware, async (req, res) => {
     try{
         const fileId: string[] = [req.params.id as string];
 
         if (await verifyIfUserOwns(req.user.id, fileId)){
-            const meta = await GetFilesMetaData(req.user.id, fileId);
-            const metaData = meta[0].mime_type;
-            
-            res.set("Content-Type", metaData);
-            return res.sendFile(path.resolve(THUMBNAIL_FOLDER, req.user.id, fileId[0]));
-
+            res.set("Content-Type", "image/webp");
+            return res.sendFile(path.resolve(THUMBNAIL_FOLDER, req.user.id, `${fileId[0]}.webp`));
         } else {
             return res.status(400).json({error: "file is not owned by you"});
         }

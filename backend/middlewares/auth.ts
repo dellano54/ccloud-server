@@ -29,4 +29,11 @@ app.use((req, res, next) => {
 })
 
 
+export const logger = express();
+logger.use((req, res, next) => {
+    console.log(req.path + " " + req.method + " " + new Date().toISOString() + " " + res.statusCode + " " + (res.body ? JSON.stringify(res.body) : ""));
+    next();
+})
+
+
 export default app;

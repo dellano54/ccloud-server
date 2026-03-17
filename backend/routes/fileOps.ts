@@ -5,17 +5,23 @@ import { calculateHash, addFile, calculateCombinedHash, SyncCloudDB, verifyIfUse
 } from "../utils/fileoperations.js";
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 
 
 const router = express.Router();
 
 const storageFolder = process.env.CONTENTSTORAGE || "./storage";
 
-const upload = multer({
-  storage: multer.memoryStorage()
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, './temp');
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
 });
 
-
+const upload = multer({ storage: storage });
 
 router.post("/upload", middleware, upload.single("file"), async (req, res) => {
     try{
@@ -25,26 +31,33 @@ router.post("/upload", middleware, upload.single("file"), async (req, res) => {
             return res.status(400).json({ error: "file missing" });
         }
 
-
         const {creationDate, mimeType, originalName} = req.body;
 
-        const recievedHash = calculateHash(req.file.buffer);
+        // Corrected: Passing file path and awaiting the hash
+        const recievedHash = await calculateHash(req.file.path);
 
         if (LocalHash != recievedHash){
-            return res.status(400).json({error: "try again. the file recieved by the server is corrupted"});
+            await fs.promises.unlink(req.file.path).catch(() => {});
+            return res.status(400).json({
+                error: "checksum mismatch",
+                received: recievedHash,
+                expected: LocalHash,
+                details: "the file recieved by the server is corrupted or the checksum sent by the client is incorrect"
+            });
         }
 
-        const FileID = await addFile(req.file.buffer, creationDate, mimeType, originalName, req.user?.id, recievedHash)
+        // Corrected: Passing file path to addFile
+        const FileID = await addFile(req.file.path, creationDate, mimeType, originalName, req.user?.id, recievedHash)
+        
         return res.json({
             id: FileID,
             checksum: recievedHash,
             status: "processed"
         })
     } catch (err: any){
+        if (req.file) await fs.promises.unlink(req.file.path).catch(() => {});
         return res.status(500).json({error: err.message});
     }
-
-    
 })
 
 
@@ -82,12 +95,6 @@ router.get("/sync", middleware, async (req, res) => {
         const {items, deletedIds, nextVersion} = await SyncCloudDB(req.user.id, Number(version),
                                     Number(limit));
 
-
-
-        if (!items || !deletedIds || !nextVersion){
-            return res.status(500).json({err: "No data returned"});
-        }
-
         return res.status(200).json({items, deletedIds, nextVersion});
 
 
@@ -106,13 +113,13 @@ router.get("/:id/stream", middleware, async (req, res) => {
         const userOwns = await verifyIfUserOwns(req.user.id, Fileid);
 
         if (userOwns){
+            const finalPath = path.resolve(storageFolder, req.user.id, Fileid[0]);
+            
             if (req.headers.range){
                 return readFilesRange(req.user.id, Fileid[0], res);
-                
-                
             } else {
-                res.sendFile(path.resolve(storageFolder, req.user.id, Fileid[0]), {root: process.cwd()});
-
+                // Fixed: Ensure we don't pass an absolute path to res.sendFile if we're also providing root
+                res.sendFile(finalPath);
             }
         } else {
             return res.status(403).json({error: "you don't have access to this file"});
